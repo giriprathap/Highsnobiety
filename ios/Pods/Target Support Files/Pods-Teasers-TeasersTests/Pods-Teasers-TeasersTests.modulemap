@@ -1,0 +1,6 @@
+module Pods_Teasers_TeasersTests {
+  umbrella header "Pods-Teasers-TeasersTests-umbrella.h"
+
+  export *
+  module * { export * }
+}
