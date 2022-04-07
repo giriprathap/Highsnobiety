@@ -1,27 +1,78 @@
-import React from 'react';
-import {FlatList,Text,View,StyleSheet,StatusBar} from 'react-native';
-import {feedData} from '../data/feedData';
+import React,{ useState, useEffect } from 'react';
+import {FlatList,Text,View,StyleSheet,StatusBar,TouchableOpacity, Button} from 'react-native';
+import AsyncStorage from '@react-native-community/async-storage';
 import TeaserCell from './components/TeaserCell';
 
 
+var favoritesArray = [];
+var newsListArray = [];
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  feedText:{
+      fontSize: 40,
+      fontWeight: "bold"
+  }
+});
 
-  const Item = ({ title }) => (
-    <View style={styles.item}>
-      <Text style={styles.title}>{title}</Text>
-    </View>
-  );
+const onFavButtonPress = (item) => {
 
-const Feed = () => {
-    const renderItem = ({ item }) => (
-        <Item title={item.title} />
-      );
+  if (favoritesArray.includes(item)) {
+    var index = favoritesArray.indexOf(item);
+    favoritesArray.splice(index, 1);
+  }else{
+    favoritesArray.push(item);
+ }
+  storeData(favoritesArray);
+  
+  console.log("favorites in method",favoritesArray);
+}
+
+ storeData = async (favoritesArray) => {
+  try {
+    await AsyncStorage.setItem(
+      'Favorites',
+      JSON.stringify(favoritesArray)
+    );
+  } catch (error) {
+     console.log("save failed");
+  }
+};
+
+retrieveData = async () => {
+  try {
+    const value = await AsyncStorage.getItem('Favorites');
+    if (value !== null) {
+      favoritesArray = JSON.parse(value);
+    }
+  } catch (error) {
+    console.log("Retrieve failed");
+  }
+};
+
+const Feed = ({ extraData,navigation }) => {
+  newsListArray = extraData.latestNewsConnection.nodes;
+  useEffect(() => {
+    retrieveData();
+  },[favoritesArray]);
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button onPress={() => navigation.navigate('Saved',{
+          favorites: favoritesArray,
+        })} title="Saved" />
+      ),
+    });
+  }, [navigation]);
     return(
         <View style={styles.container}>
-            <Text style={styles.feedText}>Feed</Text>
             <FlatList
-            data={feedData}
-            renderItem={TeaserCell}
-             />
+            data={newsListArray}
+            renderItem={({ item }) => (
+              <TeaserCell item={item} onPress={() => onFavButtonPress(item)} navigation={navigation}/>
+          )}             
+          />
         </View>
     );
 }
@@ -31,23 +82,4 @@ export default Feed;
 
 
 
-const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      marginTop: StatusBar.currentHeight || 0,
-    },
-    item: {
-      backgroundColor: '#f9c2ff',
-      padding: 20,
-      marginVertical: 8,
-      marginHorizontal: 16,
-    },
-    title: {
-      fontSize: 32,
-    },
-    feedText:{
-        fontSize: 40,
-        fontWeight: "bold"
-    }
-  });
-  
+
